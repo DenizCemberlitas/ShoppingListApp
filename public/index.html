@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemeinsame Einkaufsliste</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <button id="closeSidebar" class="close-btn">❌</button>
+    <div id="userInfo"></div>
+    <button id="loginBtn">🔒 Mit Google anmelden</button>
+    <button id="logoutBtn" style="display: none;">🚪 Logout</button>
+  </div>
+
+  <div class="content">
+    <header>
+      <button id="toggleSidebar">☰</button>
+      <h1>🛒 Gemeinsame Einkaufsliste</h1>
+    </header>
+
+    <form id="itemForm">
+      <input id="itemInput" type="text" placeholder="Produkt eingeben" required>
+      <select id="itemCategory" required>
+        <option value="" disabled selected>Kategorie wählen</option>
+        <option value="Getränke">Getränke</option>
+        <option value="Bier">Bier</option>
+        <option value="Snacks">Snacks</option>
+        <option value="Tabakwaren">Tabakwaren</option>
+        <option value="Tabak Zubehör">Tabak Zubehör</option>
+        <option value="Spirituosen">Spirituosen</option>
+        <option value="Sonstiges">Sonstiges</option>
+      </select>
+      <select id="itemStore" required>
+        <option value="" disabled selected>Laden wählen</option>
+        <option value="Best">Best</option>
+        <option value="Rewe">Rewe</option>
+        <option value="Edeka">Edeka</option>
+        <option value="Lidl">Lidl</option>
+        <option value="Aldi">Aldi</option>
+        <option value="Netto">Netto</option>
+        <option value="Kaufland">Kaufland</option>
+        <option value="Penny">Penny</option>
+        <option value="Cultimo">Cultimo</option>
+        <option value="TAM Tabakwaren">TAM Tabakwaren</option>
+        <option value="Metro">Metro</option>
+        <option value="Sonstiges">Sonstiges</option>
+      </select>
+      <button type="submit">➕ Hinzufügen</button>
+    </form>
+
+    <button id="clearAllBtn">🧹 Alle löschen</button>
+    <div id="itemList"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

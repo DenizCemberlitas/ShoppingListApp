@@ -1,0 +1,164 @@
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #f1f1f1;
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background-color: #1e1e1e;
+  padding: 1rem;
+  width: 220px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sidebar:not(.open) {
+  transform: translateX(-100%);
+}
+
+.content {
+  flex: 1;
+  padding: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 1rem;
+}
+
+h1 {
+  margin: 0;
+}
+
+h2 {
+  margin-top: 1.5rem;
+  color: #ffd54f;
+}
+
+h3 {
+  margin-top: 1rem;
+  color: #81d4fa;
+}
+
+form {
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+input, select, button {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+input, select {
+  flex: 1;
+  background-color: #2c2c2c;
+  color: #fff;
+}
+
+button {
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+#clearAllBtn {
+  background-color: #e53935;
+}
+
+#clearAllBtn:hover {
+  background-color: #d32f2f;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0.6rem;
+  margin: 0.2rem 0;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+}
+
+li.checked span {
+  text-decoration: line-through;
+  color: #888;
+}
+
+#toggleSidebar {
+  background-color: #3f51b5;
+  padding: 0.4rem 0.6rem;
+}
+
+#toggleSidebar:hover {
+  background-color: #303f9f;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    height: 100vh;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .content {
+    padding: 1rem;
+  }
+
+  form {
+    flex-direction: column;
+  }
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  align-self: flex-end;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #f44336;
+}
+
+/* 🖱️ Mach Listeneinträge sichtbar als verschiebbar */
+li[draggable="true"] {
+  cursor: grab;
+}
+
+/* 🟢 Visuelles Feedback beim Ziehen über ein Ziel */
+li.drag-over {
+  border-top: 2px solid #4caf50;
+}
+
