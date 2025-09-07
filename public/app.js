@@ -1,89 +1,144 @@
+// app.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  orderBy,
+  query,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ---- UI-Elemente holen
   const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const userInfo = document.getElementById("userInfo");
   const form = document.getElementById("itemForm");
   const input = document.getElementById("itemInput");
   const categorySelect = document.getElementById("itemCategory");
   const storeSelect = document.getElementById("itemStore");
   const list = document.getElementById("itemList");
   const clearBtn = document.getElementById("clearAllBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const userInfo = document.getElementById("userInfo");
   const toggleSidebar = document.getElementById("toggleSidebar");
   const sidebar = document.getElementById("sidebar");
   const closeSidebar = document.getElementById("closeSidebar");
 
+  // Defensive: Falls ein Element fehlt, loggen (damit Sidebar sicher funktioniert)
+  if (!toggleSidebar || !sidebar || !closeSidebar) {
+    console.warn("Sidebar-Elemente nicht gefunden:", {
+      toggleSidebar: !!toggleSidebar,
+      sidebar: !!sidebar,
+      closeSidebar: !!closeSidebar
+    });
+  }
+
+  // ---- Sidebar öffnen/schließen
+  if (toggleSidebar) {
+    toggleSidebar.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+  }
+  if (closeSidebar) {
+    closeSidebar.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+    });
+  }
+
+  // ---- Firebase init
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
   let items = [];
   let initialized = false;
 
-  toggleSidebar.addEventListener("click", () => {
-    sidebar.classList.toggle("open");
-  });
-
-  closeSidebar.addEventListener("click", () => {
-    sidebar.classList.remove("open");
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    firebase.auth().signOut().then(() => {
-      list.innerHTML = "";
-    }).catch((error) => {
-      console.error("Fehler beim Logout:", error);
+  // ---- Auth / UI
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        list.innerHTML = "";
+      } catch (error) {
+        console.error("Fehler beim Logout:", error);
+      }
     });
-  });
+  }
 
-  firebase.auth().onAuthStateChanged(user => {
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.error("Login fehlgeschlagen:", err);
+        alert("Login fehlgeschlagen: " + err.message);
+      }
+    });
+  }
+
+  onAuthStateChanged(auth, (user) => {
     if (user) {
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline-block";
-      userInfo.textContent = `👤 Eingeloggt als: ${user.displayName || user.email}`;
+      if (loginBtn) loginBtn.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+      if (userInfo) userInfo.textContent = `👤 Eingeloggt als: ${user.displayName || user.email}`;
       initSharedList();
     } else {
-      loginBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-      userInfo.textContent = "";
-      list.innerHTML = "";
+      if (loginBtn) loginBtn.style.display = "inline-block";
+      if (logoutBtn) logoutBtn.style.display = "none";
+      if (userInfo) userInfo.textContent = "";
+      if (list) list.innerHTML = "";
     }
   });
 
-  loginBtn.addEventListener("click", () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-      .then(() => firebase.auth().signInWithPopup(provider))
-      .then(() => {
-        loginBtn.style.display = "none";
-        initSharedList();
-      })
-      .catch(error => {
-        console.error("Login fehlgeschlagen:", error);
-        alert("Login fehlgeschlagen: " + error.message);
-      });
-  });
-
+  // ---- Firestore Liste
   function initSharedList() {
     if (initialized) return;
     initialized = true;
 
-    const listRef = firebase.firestore()
-      .collection("lists")
-      .doc("familie")
-      .collection("items");
+    const listRef = collection(doc(collection(db, "lists"), "familie"), "items");
+    const q = query(listRef, orderBy("order"));
 
-    listRef.orderBy("order").onSnapshot(snapshot => {
+    // 🔹 Letzte Auswahl laden (aus localStorage)
+    let lastCategory = localStorage.getItem("lastCategory") || "";
+    let lastStore = localStorage.getItem("lastStore") || "";
+
+    if (lastCategory) categorySelect.value = lastCategory;
+    if (lastStore) storeSelect.value = lastStore;
+
+
+    onSnapshot(q, (snapshot) => {
       items = [];
-      snapshot.forEach(doc => {
-        items.push({ ...doc.data(), id: doc.id });
+      snapshot.forEach((docSnap) => {
+        items.push({ ...docSnap.data(), id: docSnap.id });
       });
       renderItems(listRef);
     });
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      const category = categorySelect.value;
-      const store = storeSelect.value;
-      if (text && category && store) {
-        listRef.add({
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        const category = categorySelect.value;
+        const store = storeSelect.value;
+        if (!text || !category || !store) return;
+
+        // 🔹 Item in Firestore speichern
+        await addDoc(listRef, {
           text,
           category,
           store,
@@ -91,49 +146,57 @@ document.addEventListener("DOMContentLoaded", () => {
           timestamp: Date.now(),
           order: Date.now()
         });
-        input.value = "";
-        categorySelect.value = "";
-        storeSelect.value = "";
-      }
-    });
 
-    clearBtn.addEventListener("click", () => {
-      if (confirm("Wirklich alles löschen?")) {
-        items.forEach(item => {
-          listRef.doc(item.id).delete();
-        });
-      }
-    });
+        // 🔹 Letzte Auswahl merken
+        localStorage.setItem("lastCategory", category);
+        localStorage.setItem("lastStore", store);
+
+        // 🔹 Nur Textfeld zurücksetzen & Cursor wieder rein
+        input.value = "";
+        input.focus();
+      });
+
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", async () => {
+        if (confirm("Wirklich alles löschen?")) {
+          for (let item of items) {
+            await deleteDoc(doc(listRef, item.id));
+          }
+        }
+      });
+    }
   }
 
   function renderItems(listRef) {
     list.innerHTML = "";
 
+    // nach Store und Kategorie gruppieren
     const grouped = {};
-    items.forEach(item => {
+    items.forEach((item) => {
       if (!grouped[item.store]) grouped[item.store] = {};
       if (!grouped[item.store][item.category]) grouped[item.store][item.category] = [];
       grouped[item.store][item.category].push(item);
     });
 
-    Object.keys(grouped).forEach(store => {
+    Object.keys(grouped).forEach((store) => {
       const storeHeader = document.createElement("h2");
       storeHeader.textContent = "🏬 " + store;
 
-      // 🧹 Button zum Löschen aller Items für diesen Store
+      // gesamten Store löschen
       const deleteStoreBtn = document.createElement("button");
       deleteStoreBtn.textContent = "🗑️ Ladenliste löschen";
       deleteStoreBtn.style.marginLeft = "1rem";
-      deleteStoreBtn.addEventListener("click", () => {
+      deleteStoreBtn.addEventListener("click", async () => {
         if (confirm(`Alle Produkte aus "${store}" wirklich löschen?`)) {
-          const toDelete = items.filter(item => item.store === store);
-          toDelete.forEach(item => {
-            listRef.doc(item.id).delete();
-          });
+          const toDelete = items.filter((item) => item.store === store);
+          for (let item of toDelete) {
+            await deleteDoc(doc(listRef, item.id));
+          }
         }
       });
 
-      // Store-Header + Button zusammen
       const storeHeaderWrapper = document.createElement("div");
       storeHeaderWrapper.style.display = "flex";
       storeHeaderWrapper.style.alignItems = "center";
@@ -141,30 +204,29 @@ document.addEventListener("DOMContentLoaded", () => {
       storeHeaderWrapper.appendChild(deleteStoreBtn);
       list.appendChild(storeHeaderWrapper);
 
-
+      // Kategorien
       const categories = grouped[store];
-      Object.keys(categories).sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(category => {
+      Object.keys(categories).forEach((category) => {
         const categoryHeader = document.createElement("h3");
         categoryHeader.textContent = getCategoryEmoji(category) + " " + category;
         list.appendChild(categoryHeader);
 
         const ul = document.createElement("ul");
 
-        categories[category].forEach(item => {
+        categories[category].forEach((item) => {
           const li = document.createElement("li");
           if (item.checked) li.classList.add("checked");
 
+          // Drag & Drop
           li.setAttribute("draggable", "true");
           li.dataset.itemId = item.id;
 
-          // 👉 Drag-Start: Item-ID merken
           li.addEventListener("dragstart", (e) => {
             e.dataTransfer.setData("text/plain", item.id);
           });
 
-          // 👉 Drop-Ziel: Einfügen + Order aktualisieren
           li.addEventListener("dragover", (e) => {
-            e.preventDefault(); // notwendig für Drop
+            e.preventDefault();
             li.classList.add("drag-over");
           });
 
@@ -177,65 +239,39 @@ document.addEventListener("DOMContentLoaded", () => {
             li.classList.remove("drag-over");
 
             const draggedId = e.dataTransfer.getData("text/plain");
-            const draggedIndex = categories[category].findIndex(i => i.id === draggedId);
-            const targetIndex = categories[category].findIndex(i => i.id === item.id);
+            const draggedIndex = categories[category].findIndex((i) => i.id === draggedId);
+            const targetIndex = categories[category].findIndex((i) => i.id === item.id);
+
             if (draggedIndex < 0 || targetIndex < 0 || draggedIndex === targetIndex) return;
 
+            // neu anordnen
             const movedItem = categories[category].splice(draggedIndex, 1)[0];
             categories[category].splice(targetIndex, 0, movedItem);
 
-            // 🧠 Reihenfolge aktualisieren und auf Firestore speichern (WICHTIG: async!)
+            // Reihenfolge speichern
             const updates = categories[category].map((itm, idx) =>
-              listRef.doc(itm.id).update({ order: idx })
+              updateDoc(doc(listRef, itm.id), { order: idx })
             );
-
             try {
-              await Promise.all(updates); // 🧘 Erst speichern…
+              await Promise.all(updates);
             } catch (error) {
               console.error("Fehler beim Aktualisieren der Reihenfolge:", error);
             }
-
-            // 💡 NICHT manuell rendern – Firestore ruft onSnapshot() von selbst auf
           });
 
-
-
-
-          li.addEventListener("drop", (e) => {
-            e.preventDefault();
-            li.style.borderTop = "";
-
-            const draggedId = e.dataTransfer.getData("text/plain");
-
-            // 🔁 Neue Reihenfolge innerhalb dieser Kategorie berechnen
-            const draggedIndex = categories[category].findIndex(i => i.id === draggedId);
-            const targetIndex = categories[category].findIndex(i => i.id === item.id);
-            if (draggedIndex < 0 || targetIndex < 0 || draggedIndex === targetIndex) return;
-
-            // 🧮 Items neu anordnen
-            const movedItem = categories[category].splice(draggedIndex, 1)[0];
-            categories[category].splice(targetIndex, 0, movedItem);
-
-            // 🔃 Neue Reihenfolge in Firestore speichern
-            categories[category].forEach((itm, idx) => {
-              listRef.doc(itm.id).update({ order: idx });
-            });
-
-            // 🔁 Neu rendern
-            renderItems(listRef);
-          });
-
+          // Klick zum Abhaken
           const span = document.createElement("span");
           span.textContent = item.text;
-          span.addEventListener("click", () => {
-            listRef.doc(item.id).update({ checked: !item.checked });
+          span.addEventListener("click", async () => {
+            await updateDoc(doc(listRef, item.id), { checked: !item.checked });
           });
 
+          // Löschen-Button
           const deleteBtn = document.createElement("button");
           deleteBtn.textContent = "❌";
-          deleteBtn.addEventListener("click", (e) => {
+          deleteBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
-            listRef.doc(item.id).delete();
+            await deleteDoc(doc(listRef, item.id));
           });
 
           li.appendChild(span);
