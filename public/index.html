@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -8,15 +9,38 @@
 </head>
 <body>
   <div class="sidebar" id="sidebar">
-    <button id="closeSidebar" class="close-btn">❌</button>
+    <button id="closeSidebar" class="close-btn" title="Sidebar schließen">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/multiply.png" alt="Close">
+    </button>
     <div id="userInfo"></div>
-    <button id="loginBtn">🔒 Mit Google anmelden</button>
-    <button id="logoutBtn" style="display: none;">🚪 Logout</button>
+    <button id="loginBtn" title="Mit Google anmelden">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/google-logo.png" alt="Google Login">
+    </button>
+    <div class="list-switcher">
+      <h3>🗂️ Listen</h3>
+      <div id="listChips"></div>
+
+      <form id="newListForm" autocomplete="off">
+        <input id="newListName" type="text" placeholder="Neue Liste (z. B. Familie)">
+        <button type="submit" title="Liste Hinzufügen">
+          <img src="https://img.icons8.com/ios-filled/50/ffffff/plus.png" alt="Liste Hinzufügen">
+        </button>
+      </form>
+      <button id="deleteListBtn" class="danger" title="Liste löschen">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/trash.png" alt="Delete List">
+      </button>
+    </div>
+    <button id="logoutBtn" title="Logout" style="display:none;">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/exit.png" alt="Logout">
+    </button>
+
   </div>
 
   <div class="content">
     <header>
-      <button id="toggleSidebar">☰</button>
+      <button id="toggleSidebar" title="Sidebar öffnen">
+        <img src="https://img.icons8.com/material-rounded/48/FFFFFF/menu--v1.png" alt="Menu">
+      </button>
       <h1>🛒 Gemeinsame Einkaufsliste</h1>
     </header>
 
@@ -47,14 +71,18 @@
         <option value="Metro">Metro</option>
         <option value="Sonstiges">Sonstiges</option>
       </select>
-      <button type="submit">➕ Hinzufügen</button>
+      <button type="submit" title="Hinzufügen">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/plus.png" alt="Hinzufügen">
+      </button>
     </form>
 
-    <button id="clearAllBtn">🧹 Alle löschen</button>
+    <button id="clearAllBtn" class="danger" title="Alle löschen">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/trash.png" alt="Clear All">
+    </button>
+
     <div id="itemList"></div>
   </div>
 
-  <!-- Nur noch EIN Modul-Script laden -->
   <script type="module" src="app.js"></script>
 </body>
 </html>

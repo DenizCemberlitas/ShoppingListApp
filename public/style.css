@@ -1,18 +1,32 @@
+/* === Apple-like Dark Mode === */
+:root {
+  --bg: #000;                  /* Haupt-Hintergrund */
+  --bg-secondary: #1c1c1e;     /* Sidebar, Cards */
+  --bg-tertiary: #2c2c2e;      /* Inputs, Chips */
+  --text: #f5f5f7;             /* Primär-Text */
+  --text-secondary: #a1a1aa;   /* Sekundär-Text */
+  --accent: #0a84ff;           /* iOS Blau */
+  --danger: #ff3b30;
+  --danger-hover: #d70015;
+  --radius: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --transition: 0.25s ease;
+}
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #121212;
-  color: #f1f1f1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
   display: flex;
-  flex-direction: row;
   min-height: 100vh;
 }
 
+/* === Sidebar === */
 .sidebar {
   background-color: #1e1e1e;
   padding: 1rem;
-  width: 220px;
+  width: 260px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -20,145 +34,344 @@ body {
   transition: transform 0.3s ease-in-out;
 }
 
-.sidebar:not(.open) {
-  transform: translateX(-100%);
-}
-
-.content {
-  flex: 1;
-  padding: 1rem;
-}
-
-header {
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  gap: 1rem;
-}
-
-h1 {
+.sidebar h3 {
   margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
 }
 
-h2 {
-  margin-top: 1.5rem;
-  color: #ffd54f;
-}
-
-h3 {
-  margin-top: 1rem;
-  color: #81d4fa;
-}
-
-form {
-  margin: 1rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-input, select, button {
-  padding: 0.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-input, select {
-  flex: 1;
-  background-color: #2c2c2c;
-  color: #fff;
-}
-
-button {
-  background-color: #4caf50;
-  color: white;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-#clearAllBtn {
-  background-color: #e53935;
-}
-
-#clearAllBtn:hover {
-  background-color: #d32f2f;
-}
-
-ul {
-  list-style: none;
-  padding-left: 0;
-}
-
-li {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0.6rem;
-  margin: 0.2rem 0;
-  background-color: #2a2a2a;
-  border-radius: 4px;
-}
-
-li.checked span {
-  text-decoration: line-through;
-  color: #888;
-}
-
-#toggleSidebar {
-  background-color: #3f51b5;
-  padding: 0.4rem 0.6rem;
-}
-
-#toggleSidebar:hover {
-  background-color: #303f9f;
-}
-
+/* Mobile: Off-canvas */
+/* ===== Mobile Polish ===== */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 999;
     height: 100vh;
-    transform: translateX(-100%);
+    z-index: 999;
+    transform: translateX(-100%); /* ausgeblendet */
   }
 
   .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0); /* eingeblendet */
   }
 
   .content {
+    flex: 1;
     padding: 1rem;
   }
+  /* Gesamt-Padding kleiner, mehr Platz fürs Formular */
+  .content {
+    padding: 12px;
+  }
 
+  /* Header kompakter */
+  header {
+    padding: 8px 0;
+    gap: 8px;
+  }
+  h1 {
+    font-size: 1.05rem;        /* vorher 1.3–1.6rem -> runter */
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  /* Sidebar-Toggle & Close Button handlich, aber nicht riesig */
+  #toggleSidebar,
+  .close-btn,
+  #toggleSidebar img,
+  .close-btn img {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Formular: 1 Spalte, angenehme Touch-Ziele, kein iOS-Zoom (16px) */
   form {
     flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  input,
+  select {
+    font-size: 16px;          /* verhindert iOS-Zoom */
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+  }
+
+  /* Icon-Buttons im Allgemeinen */
+  button {
+    width: auto;               /* Standard nicht rund erzwingen */
+    height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+  }
+  button img {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Primärer Submit-Button: volle Breite, Icon mittig */
+  #itemForm button[type="submit"] {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--accent);
+  }
+
+  /* „Alle löschen“ etwas dezenter, volle Breite unter dem Formular */
+  #clearAllBtn {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+
+  /* Listen-Chips in der Sidebar: pill-förmig, volle Breite */
+  #listChips { gap: 8px; }
+  .list-chip {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    font-size: 0.95rem;
+    border: 1px solid #3a3a3c;
+  }
+  .list-chip.active {
+    background: #0a84ff;
+    color: #fff;
+    border-color: #0a84ff;
+  }
+
+  /* Snackbar nicht zu groß, fingerfreundlich */
+  #snackbar {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  #snackbar button {
+    padding: 4px 8px;
+    font-size: 14px;
   }
 }
 
+/* Kleine Tablet-Optimierung */
+@media (min-width: 481px) and (max-width: 768px) {
+  #itemForm button[type="submit"],
+  #clearAllBtn { height: 48px; border-radius: 12px; }
+  input, select { font-size: 16px; padding: 12px 14px; }
+}
+
+
+/* === Content === */
+.content {
+  flex: 1;
+  padding: 1rem 1.5rem;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #2c2c2e;
+  z-index: 900;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+/* === Inputs & Forms === */
+form {
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+input, select {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+input:focus, select:focus {
+  outline: 2px solid var(--accent);
+}
+
+/* === Buttons === */
+button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition), transform 0.1s;
+  padding: 0;
+}
+
+button img {
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+
+button:hover { background: #006edc; }
+button:active { transform: scale(0.95); }
+
+button.danger {
+  background: var(--danger);
+}
+button.danger:hover {
+  background: var(--danger-hover);
+}
+
+
+/* Sidebar Close-Button */
 .close-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 1.5rem;
   align-self: flex-end;
   cursor: pointer;
 }
+.close-btn:hover { color: var(--danger); }
 
-.close-btn:hover {
-  color: #f44336;
+/* === Chips (Listen) === */
+.list-chip {
+  display: inline-block;
+  padding: 6px 14px;
+  margin: 4px 0;
+  border-radius: 12px; /* statt 50% → pill look */
+  background: #2c2c2e; /* dunkles Grau wie iOS Darkmode */
+  color: #f5f5f7;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid #3a3a3c;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  text-align: left;
+  width: 100%; /* damit es sidebar-breit ist */
 }
 
-/* 🖱️ Mach Listeneinträge sichtbar als verschiebbar */
-li[draggable="true"] {
-  cursor: grab;
+.list-chip:hover {
+  background: #3a3a3c;
 }
 
-/* 🟢 Visuelles Feedback beim Ziehen über ein Ziel */
-li.drag-over {
-  border-top: 2px solid #4caf50;
+.list-chip.active {
+  background: #0a84ff; /* Apple Blau */
+  color: #fff;
+  border-color: #0a84ff;
 }
+
+.list-chip:active {
+  transform: scale(0.97);
+}
+
+
+/* === List Items === */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 1rem 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+  padding: 0.6rem 0.8rem;
+  margin: 0.3rem 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+li.checked span {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* === Section Headers === */
+h2 {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+/* === Snackbar (Undo) === */
+#snackbar {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: var(--bg-secondary);
+  color: var(--text);
+  text-align: center;
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  box-shadow: var(--shadow);
+}
+
+#snackbar.show {
+  visibility: visible;
+  animation: fadein 0.5s, fadeout 0.5s 3.5s;
+}
+
+#snackbar button {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+/* === Drag & Drop Feedback === */
+li[draggable="true"] { cursor: grab; }
+li.drag-over { border: 2px dashed var(--accent); }
+
+#deleteListBtn[disabled] { opacity: 0.6; pointer-events: none; }
 
