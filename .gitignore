@@ -1,39 +1,20 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Dependency directories
+# Dependencies
 node_modules/
-jspm_packages/
 
-# Firebase cache & config
+# Firebase
 .firebase/
-.firebase-tools.json
+firebase-debug.log
+firestore-debug.log
 
-# Local env files (API Keys, Secrets)
+# Environment & Secrets
 .env
 .env.local
 .env.*.local
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Editor settings
+# Editor
 .vscode/
 .idea/
-
-# Build outputs
-dist/
-build/
-public/*.cache
-public/*.map
-
-# Optional: if you generate service account keys
-*.json
-!firebase.json
-!.firebaserc

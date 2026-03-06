@@ -27,7 +27,21 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-console.log("✅ app.js geladen");
+/* -------------------- Zentrale Kategorien & Emojis -------------------- */
+const CATEGORIES = [
+  { value: "Getränke",      emoji: "🥤" },
+  { value: "Bier",          emoji: "🍺" },
+  { value: "Snacks",        emoji: "🥨" },
+  { value: "Tiefkühl",      emoji: "🧊" },
+  { value: "Tabakwaren",    emoji: "🚬" },
+  { value: "Tabak Zubehör", emoji: "🚬" },
+  { value: "Spirituosen",   emoji: "🍾" },
+  { value: "Sonstiges",     emoji: "🧺" },
+];
+
+function getCategoryEmoji(category) {
+  return CATEGORIES.find(c => c.value === category)?.emoji ?? "🛒";
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   /* -------------------- Firebase -------------------- */
@@ -59,13 +73,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const newListNameInp = document.getElementById("newListName");
   const deleteListBtn  = document.getElementById("deleteListBtn");
 
+  /* -------------------- Kategorien dynamisch befüllen -------------------- */
+  CATEGORIES.forEach(({ value, emoji }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = `${emoji} ${value}`;
+    categorySelect?.appendChild(opt);
+  });
+
   /* -------------------- App State -------------------- */
   let items = [];
   let unsubscribeItems = null;
-  let currentItemsRef = null;              // <- zentrale Referenz auf die aktive Items-Subcollection
+  let currentItemsRef = null;
   let currentListId = localStorage.getItem("currentListId") || "familie";
 
-  // Auswahl merken
   let lastCategory = localStorage.getItem("lastCategory") || "";
   let lastStore    = localStorage.getItem("lastStore") || "";
 
@@ -91,16 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* -------------------- Sidebar -------------------- */
   toggleSidebar.addEventListener("click", () => {
-  console.log("toggleSidebar clicked");
-  sidebar.classList.toggle("open");
-  document.body.classList.toggle("sidebar-open", sidebar.classList.contains("open"));
-});
+    sidebar.classList.toggle("open");
+    document.body.classList.toggle("sidebar-open", sidebar.classList.contains("open"));
+  });
 
-closeSidebar.addEventListener("click", () => {
-  console.log("closeSidebar clicked");
-  sidebar.classList.remove("open");
-  document.body.classList.remove("sidebar-open");
-});
+  closeSidebar.addEventListener("click", () => {
+    sidebar.classList.remove("open");
+    document.body.classList.remove("sidebar-open");
+  });
 
   /* -------------------- Auth -------------------- */
   loginBtn?.addEventListener("click", async () => {
@@ -129,15 +148,14 @@ closeSidebar.addEventListener("click", () => {
       userInfo && (userInfo.textContent = `👤 Eingeloggt als: ${user.displayName || user.email}`);
       input && input.focus();
 
-      await renderListChips();   // Listenauswahl aufbauen
-      initSharedList();          // aktive Liste verbinden
+      await renderListChips();
+      initSharedList();
     } else {
       loginBtn && (loginBtn.style.display = "inline-block");
       logoutBtn && (logoutBtn.style.display = "none");
       userInfo && (userInfo.textContent = "");
       listEl && (listEl.innerHTML = "");
 
-      // Abo lösen
       if (typeof unsubscribeItems === "function") {
         unsubscribeItems();
         unsubscribeItems = null;
@@ -162,58 +180,49 @@ closeSidebar.addEventListener("click", () => {
     }
   });
 
- deleteListBtn?.addEventListener("click", async () => {
-  // Doppelklicks blocken
-  if (deleteListBtn.dataset.busy === "1") return;
-  deleteListBtn.dataset.busy = "1";
-  deleteListBtn.disabled = true;
+  deleteListBtn?.addEventListener("click", async () => {
+    if (deleteListBtn.dataset.busy === "1") return;
+    deleteListBtn.dataset.busy = "1";
+    deleteListBtn.disabled = true;
 
-  try {
-    const snap = await getDoc(doc(db, "lists", currentListId));
-    const name = snap.exists() ? (snap.data()?.name || currentListId) : currentListId;
+    try {
+      const snap = await getDoc(doc(db, "lists", currentListId));
+      const name = snap.exists() ? (snap.data()?.name || currentListId) : currentListId;
 
-    if (!confirm(`„${name}“ und alle enthaltenen Einträge wirklich löschen?`)) return;
+      if (!confirm(`„${name}" und alle enthaltenen Einträge wirklich löschen?`)) return;
 
-    // 1) Kandidaten für die nächste Liste bestimmen (ohne die aktuelle)
-    const allBefore = await getDocs(collection(db, "lists"));
-    const remaining = allBefore.docs.map(d => d.id).filter(id => id !== currentListId);
+      const allBefore = await getDocs(collection(db, "lists"));
+      const remaining = allBefore.docs.map(d => d.id).filter(id => id !== currentListId);
 
-    // 2) Aktuelles Abo lösen & UI entkoppeln
-    if (typeof unsubscribeItems === "function") {
-      unsubscribeItems();
-      unsubscribeItems = null;
+      if (typeof unsubscribeItems === "function") {
+        unsubscribeItems();
+        unsubscribeItems = null;
+      }
+      currentItemsRef = null;
+      listEl && (listEl.innerHTML = "");
+
+      await deleteListDeep(db, currentListId);
+
+      await renderListChips();
+
+      let nextId = remaining[0];
+      if (!nextId) {
+        await setDoc(doc(db, "lists", "familie"), { name: "Familie", createdAt: serverTimestamp() }, { merge: true });
+        nextId = "familie";
+      }
+
+      currentListId = nextId;
+      localStorage.setItem("currentListId", currentListId);
+      initSharedList();
+
+    } catch (err) {
+      console.error("Liste löschen fehlgeschlagen:", err);
+      alert("Konnte die Liste nicht löschen: " + (err?.message || err));
+    } finally {
+      deleteListBtn.dataset.busy = "0";
+      deleteListBtn.disabled = false;
     }
-    currentItemsRef = null;
-    listEl && (listEl.innerHTML = "");
-
-    // 3) Tief löschen
-    await deleteListDeep(db, currentListId);
-
-    // 4) Chips neu aufbauen (gelöschte Liste verschwindet visuell)
-    await renderListChips();
-
-    // 5) Nächste Liste festlegen (oder Default anlegen)
-    let nextId = remaining[0];
-    if (!nextId) {
-      await setDoc(doc(db, "lists", "familie"), { name: "Familie", createdAt: serverTimestamp() }, { merge: true });
-      nextId = "familie";
-    }
-
-    // 6) Umschalten & erst dann wieder initialisieren
-    currentListId = nextId;
-    localStorage.setItem("currentListId", currentListId);
-    initSharedList();
-
-  } catch (err) {
-    console.error("Liste löschen fehlgeschlagen:", err);
-    alert("Konnte die Liste nicht löschen: " + (err?.message || err));
-  } finally {
-    deleteListBtn.dataset.busy = "0";
-    deleteListBtn.disabled = false;
-  }
-});
-
-
+  });
 
   async function renderListChips() {
     if (!listChips) return;
@@ -245,14 +254,8 @@ closeSidebar.addEventListener("click", () => {
   function switchList(listId) {
     currentListId = listId;
     localStorage.setItem("currentListId", currentListId);
-
-    // UI reset
     listEl && (listEl.innerHTML = "");
-
-    // Chips aktualisieren
     renderListChips();
-
-    // aktive Liste neu verbinden
     initSharedList();
   }
 
@@ -267,17 +270,8 @@ closeSidebar.addEventListener("click", () => {
     );
   }
 
-  async function ensureListDoc(listId, displayName) {
-    const ref = doc(db, "lists", listId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, { name: displayName || listId, createdAt: serverTimestamp() }, { merge: true });
-    }
-  }
-
   /* -------------------- Aktive Liste verbinden -------------------- */
   function initSharedList() {
-    // altes Snapshot-Abo lösen
     if (typeof unsubscribeItems === "function") {
       unsubscribeItems();
       unsubscribeItems = null;
@@ -287,20 +281,16 @@ closeSidebar.addEventListener("click", () => {
     currentItemsRef  = collection(listDocRef, "items");
     const q = query(currentItemsRef, orderBy("order"));
 
-    
-
-    // letzte Auswahl wiederherstellen
     if (lastCategory) categorySelect && (categorySelect.value = lastCategory);
     if (lastStore)    storeSelect && (storeSelect.value = lastStore);
 
-    // Live-Abo der Items
     unsubscribeItems = onSnapshot(q, (snapshot) => {
       items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       renderItems(currentItemsRef);
     });
   }
 
-  /* -------------------- EINMAL: Submit & Clear (verwenden currentItemsRef) -------------------- */
+  /* -------------------- Submit & Clear -------------------- */
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!currentItemsRef) return;
@@ -310,13 +300,16 @@ closeSidebar.addEventListener("click", () => {
     const store = storeSelect?.value || "";
     if (!text || !category || !store) return;
 
+    // Eindeutiger order-Wert: Timestamp + Zufallsanteil
+    const order = Date.now() + Math.random();
+
     await addDoc(currentItemsRef, {
       text,
       category,
       store,
       checked: false,
       timestamp: Date.now(),
-      order: Date.now(),
+      order,
     });
 
     localStorage.setItem("lastCategory", category);
@@ -341,7 +334,6 @@ closeSidebar.addEventListener("click", () => {
   function renderItems(itemsRef) {
     listEl.innerHTML = "";
 
-    // Gruppieren nach Store -> Category
     const grouped = {};
     for (const it of items) {
       grouped[it.store] ??= {};
@@ -350,7 +342,6 @@ closeSidebar.addEventListener("click", () => {
     }
 
     Object.keys(grouped).forEach((store) => {
-      // Store Header
       const headerWrap = document.createElement("div");
       headerWrap.style.display = "flex";
       headerWrap.style.alignItems = "center";
@@ -360,7 +351,6 @@ closeSidebar.addEventListener("click", () => {
       storeHeader.textContent = "🏬 " + store;
       storeHeader.style.margin = "1rem 0";
 
-      // kleines Icon zum kompletten Löschen des Stores
       const deleteStoreBtn = document.createElement("button");
       deleteStoreBtn.className = "icon-btn danger";
       deleteStoreBtn.title = `"${store}" löschen`;
@@ -380,7 +370,6 @@ closeSidebar.addEventListener("click", () => {
       headerWrap.appendChild(deleteStoreBtn);
       listEl.appendChild(headerWrap);
 
-      // Kategorien des Stores
       const categories = grouped[store];
       Object.keys(categories).forEach((category) => {
         const categoryHeader = document.createElement("h3");
@@ -393,7 +382,6 @@ closeSidebar.addEventListener("click", () => {
           const li = document.createElement("li");
           if (item.checked) li.classList.add("checked");
 
-          // Drag & Drop
           li.setAttribute("draggable", "true");
           li.dataset.itemId = item.id;
 
@@ -427,14 +415,12 @@ closeSidebar.addEventListener("click", () => {
             }
           });
 
-          // Toggle checked
           const span = document.createElement("span");
           span.textContent = item.text;
           span.addEventListener("click", async () => {
             await updateDoc(doc(itemsRef, item.id), { checked: !item.checked });
           });
 
-          // Delete + Undo
           const delBtn = document.createElement("button");
           delBtn.textContent = "❌";
           delBtn.addEventListener("click", async (e) => {
@@ -457,7 +443,6 @@ closeSidebar.addEventListener("click", () => {
   function showUndoSnackbar(deletedItem, itemsRef) {
     let bar = document.getElementById("snackbar");
     if (!bar) {
-      // Fallback: Snackbar dynamisch anlegen, falls nicht im HTML vorhanden
       bar = document.createElement("div");
       bar.id = "snackbar";
       document.body.appendChild(bar);
@@ -493,23 +478,9 @@ closeSidebar.addEventListener("click", () => {
     );
   }
 
-  function getCategoryEmoji(category) {
-    switch (category) {
-      case "Getränke": return "🥤";
-      case "Bier": return "🍺";
-      case "Snacks": return "🥨";
-      case "Tiefkühl": return "🧊";
-      case "Tabakwaren": return "🚬";
-      case "Tabak Zubehör": return "🚬";
-      case "Spirituosen": return "🍾";
-      case "Sonstiges": return "🧺";
-      default: return "🛒";
-    }
-  }
 }); // DOMContentLoaded Ende
 
 /* -------------------- Hilfsfunktion: Liste tief löschen -------------------- */
-// keine Abhängigkeiten aus dem oberen Scope; db wird übergeben
 async function deleteListDeep(db, listId) {
   const itemsRef = collection(doc(db, "lists", listId), "items");
   const itemsSnap = await getDocs(itemsRef);
