@@ -1,83 +1,121 @@
-/* === Apple-like Dark Mode === */
+/* ============================================================
+   style.css – Shopping List App
+   Design-Philosophie: Apple-like Dark Mode
+   - Schwarz/Dunkelgrau als Basis (wie iOS Dark Mode)
+   - iOS-Blau (#0a84ff) als Akzentfarbe
+   - Border-Radius 12px für abgerundete, moderne Elemente
+   - Konsistente CSS-Variablen für einfache Anpassbarkeit
+   ============================================================ */
+
+
+/* ── CSS-VARIABLEN (Custom Properties) ─────────────────────
+   Definiert im :root-Selektor → global verfügbar in der ganzen Datei.
+   Vorteile:
+   - Einmal ändern, überall wirksam (z.B. Akzentfarbe)
+   - Light-Mode-Variante kann einfach die Werte überschreiben
+   - Code wird lesbarer: var(--accent) statt #0a84ff überall
+   ─────────────────────────────────────────────────────────── */
 :root {
-  --bg: #000;                  /* Haupt-Hintergrund */
-  --bg-secondary: #1c1c1e;     /* Sidebar, Cards */
-  --bg-tertiary: #2c2c2e;      /* Inputs, Chips */
-  --text: #f5f5f7;             /* Primär-Text */
-  --text-secondary: #a1a1aa;   /* Sekundär-Text */
-  --accent: #0a84ff;           /* iOS Blau */
-  --danger: #ff3b30;
-  --danger-hover: #d70015;
-  --radius: 12px;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --transition: 0.25s ease;
+  --bg: #000;                          /* Haupt-Hintergrund: reines Schwarz wie iOS */
+  --bg-secondary: #1c1c1e;             /* Etwas heller: für Sidebar, Karten */
+  --bg-tertiary: #2c2c2e;              /* Noch etwas heller: Inputs, Chips, Liste */
+  --text: #f5f5f7;                     /* Fast-Weiß: Apple-typischer Primärtext */
+  --text-secondary: #a1a1aa;           /* Gedämpftes Grau: Sekundärtext, Kategorien */
+  --accent: #0a84ff;                   /* iOS-Blau: aktive Buttons, Fokus, aktive Chips */
+  --danger: #ff3b30;                   /* iOS-Rot: Löschen-Buttons */
+  --danger-hover: #d70015;             /* Dunkleres Rot für Hover-State */
+  --radius: 12px;                      /* Standard-Abrundung, überall konsistent */
+  --shadow: 0 4px 12px rgba(0,0,0,0.6); /* Schatten für Tiefenwirkung */
+  --transition: 0.25s ease;            /* Standard-Übergangszeit für Hover-Effekte */
 }
 
+
+/* ── BODY & LAYOUT ──────────────────────────────────────────
+   Das Root-Layout ist Flexbox: Sidebar und Content nebeneinander.
+   ─────────────────────────────────────────────────────────── */
 body {
-  margin: 0;
+  margin: 0;                           /* Browser-Standard-Margin entfernen */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /*
+    System-Font-Stack: Nutzt den nativen System-Font des Betriebssystems.
+    - macOS/iOS:   San Francisco (-apple-system, BlinkMacSystemFont)
+    - Windows:     Segoe UI
+    - Android:     Roboto
+    → Sieht auf jeder Plattform nativ aus, kein Font-Download nötig.
+  */
   background: var(--bg);
   color: var(--text);
-  display: flex;
-  min-height: 100vh;
+  display: flex;                       /* Sidebar + Content nebeneinander */
+  min-height: 100vh;                   /* Mindesthöhe = volle Viewport-Höhe */
 }
 
-/* === Sidebar === */
+
+/* ── SIDEBAR ────────────────────────────────────────────────
+   Auf Desktop: feste Breite links.
+   Auf Mobil: off-canvas (s. Media Query unten).
+   ─────────────────────────────────────────────────────────── */
 .sidebar {
-  background-color: #1e1e1e;
+  background-color: #1e1e1e;           /* Leicht heller als --bg für Abgrenzung */
   padding: 1rem;
   width: 260px;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-direction: column;              /* Elemente in der Sidebar untereinander */
+  gap: 1rem;                           /* Abstand zwischen den Sidebar-Elementen */
   transition: transform 0.3s ease-in-out;
+  /*
+    Transition auf transform: Wird für die mobile Slide-in-Animation benötigt.
+    transform: translateX(-100%)  → versteckt  (off-canvas)
+    transform: translateX(0)      → sichtbar   (mit .open-Klasse)
+    0.3s ease-in-out: Sanfte, gebremste Ein-/Ausfahrt
+  */
 }
 
 .sidebar h3 {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.5px;
+  color: var(--text-secondary);        /* Dezenter Grauton für Abschnittsüberschriften */
+  letter-spacing: 0.5px;              /* Leichtes Tracking für einen cleanen Look */
 }
 
-/* Mobile: Off-canvas */
-/* ===== Mobile Polish ===== */
+
+/* ── MOBILE: OFF-CANVAS SIDEBAR ─────────────────────────────
+   Auf Geräten ≤ 768px wird die Sidebar als Drawer implementiert.
+   Sie liegt über dem Content (fixed, z-index: 999) und fährt per
+   translateX ein und aus.
+   ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed;
+    position: fixed;                   /* Aus dem normalen Dokumentfluss nehmen */
     top: 0;
     left: 0;
     height: 100vh;
-    z-index: 999;
-    transform: translateX(-100%); /* ausgeblendet */
+    z-index: 999;                      /* Liegt über allem anderen (außer Snackbar z-index: 2000) */
+    transform: translateX(-100%);      /* Komplett nach links außerhalb des Bildschirms verschieben */
   }
 
   .sidebar.open {
-    transform: translateX(0); /* eingeblendet */
+    transform: translateX(0);          /* JS fügt .open hinzu → Sidebar fährt rein */
   }
 
+  /* Content bekommt flexibles 1 und weniger Padding auf Mobil */
   .content {
     flex: 1;
-    padding: 1rem;
-  }
-  /* Gesamt-Padding kleiner, mehr Platz fürs Formular */
-  .content {
-    padding: 12px;
+    padding: 12px;                     /* Weniger als Desktop (1rem 1.5rem) */
   }
 
-  /* Header kompakter */
   header {
     padding: 8px 0;
     gap: 8px;
   }
+
   h1 {
-    font-size: 1.05rem;        /* vorher 1.3–1.6rem -> runter */
+    font-size: 1.05rem;                /* Auf Mobil kleiner damit es in den Header passt */
     line-height: 1.2;
     font-weight: 700;
   }
 
-  /* Sidebar-Toggle & Close Button handlich, aber nicht riesig */
+  /* Toggle- und Close-Button auf handliche Größe bringen */
   #toggleSidebar,
   .close-btn,
   #toggleSidebar img,
@@ -86,34 +124,39 @@ body {
     height: 36px;
   }
 
-  /* Formular: 1 Spalte, angenehme Touch-Ziele, kein iOS-Zoom (16px) */
+  /* Formular auf Mobil: einspaltig statt mehrspaltig */
   form {
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
   }
+
   input,
   select {
-    font-size: 16px;          /* verhindert iOS-Zoom */
+    font-size: 16px;
+    /*
+      WICHTIG: font-size: 16px verhindert auf iOS den automatischen Zoom!
+      iOS zoomt Inputs rein wenn font-size < 16px → extrem nerviger UX-Bug.
+      Muss explizit 16px sein.
+    */
     padding: 12px 14px;
     border-radius: 12px;
     background: var(--bg-tertiary);
   }
 
-  /* Icon-Buttons im Allgemeinen */
   button {
-    width: auto;               /* Standard nicht rund erzwingen */
-    height: 44px;
+    height: 44px;                      /* Apple HIG: Mindest-Touch-Ziel 44x44px */
     min-width: 44px;
     padding: 0 14px;
     border-radius: 12px;
   }
+
   button img {
     width: 20px;
     height: 20px;
   }
 
-  /* Primärer Submit-Button: volle Breite, Icon mittig */
+  /* Submit-Button des Artikelformulars: volle Breite, zentriert */
   #itemForm button[type="submit"] {
     width: 100%;
     display: flex;
@@ -125,7 +168,7 @@ body {
     background: var(--accent);
   }
 
-  /* „Alle löschen“ etwas dezenter, volle Breite unter dem Formular */
+  /* "Alle löschen"-Button: volle Breite unter dem Formular */
   #clearAllBtn {
     width: 100%;
     height: 44px;
@@ -133,8 +176,9 @@ body {
     margin-top: 8px;
   }
 
-  /* Listen-Chips in der Sidebar: pill-förmig, volle Breite */
+  /* Listen-Chips in der Sidebar: volle Breite, pill-förmig */
   #listChips { gap: 8px; }
+
   .list-chip {
     width: 100%;
     padding: 10px 12px;
@@ -143,28 +187,35 @@ body {
     font-size: 0.95rem;
     border: 1px solid #3a3a3c;
   }
+
   .list-chip.active {
     background: #0a84ff;
     color: #fff;
     border-color: #0a84ff;
   }
 
-  /* Snackbar nicht zu groß, fingerfreundlich */
+  /* Snackbar: Auf Mobil volle Breite statt zentriert mit Mindestbreite */
   #snackbar {
     left: 12px;
     right: 12px;
-    transform: none;
+    transform: none;                   /* Überschreibt das Desktop-transform: translateX(-50%) */
     bottom: calc(12px + env(safe-area-inset-bottom));
+    /*
+      env(safe-area-inset-bottom): iPhone-spezifisch.
+      Sorgt dafür, dass die Snackbar nicht hinter der Home-Indicator-Leiste
+      des iPhones (der Wisch-Balken) verschwindet. Ist 0 auf Nicht-iPhones.
+    */
     padding: 10px 12px;
     border-radius: 12px;
   }
+
   #snackbar button {
     padding: 4px 8px;
     font-size: 14px;
   }
 }
 
-/* Kleine Tablet-Optimierung */
+/* Kleines Tablet-Optimierung: Input-Größen auf mittleren Geräten beibehalten */
 @media (min-width: 481px) and (max-width: 768px) {
   #itemForm button[type="submit"],
   #clearAllBtn { height: 48px; border-radius: 12px; }
@@ -172,23 +223,31 @@ body {
 }
 
 
-/* === Content === */
+/* ── CONTENT-BEREICH ─────────────────────────────────────────
+   Nimmt den restlichen Platz neben der Sidebar ein.
+   ─────────────────────────────────────────────────────────── */
 .content {
-  flex: 1;
+  flex: 1;                             /* Nimmt allen übrigen Platz in der Flexbox */
   padding: 1rem 1.5rem;
 }
 
+
+/* ── STICKY HEADER ───────────────────────────────────────────
+   Bleibt beim Scrollen oben sichtbar.
+   position: sticky ist besser als fixed weil es im Dokumentfluss bleibt
+   (kein extra padding-top am Content nötig).
+   ─────────────────────────────────────────────────────────── */
 header {
   position: sticky;
-  top: 0;
-  background: var(--bg);
+  top: 0;                              /* Klebt genau am oberen Rand */
+  background: var(--bg);              /* Hintergrund nötig, damit Content dahinter nicht durchscheint */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.8rem 0;
-  border-bottom: 1px solid #2c2c2e;
-  z-index: 900;
+  border-bottom: 1px solid #2c2c2e;   /* Dezente Trennlinie zum Content */
+  z-index: 900;                       /* Muss über List-Items liegen (z-index: auto) */
 }
 
 h1 {
@@ -197,37 +256,49 @@ h1 {
   font-weight: 600;
 }
 
-/* === Inputs & Forms === */
+
+/* ── INPUTS & FORMS ──────────────────────────────────────────
+   Das Formular nutzt Flexbox mit flex-wrap, damit auf
+   schmalen Viewports Inputs umbrechen können.
+   ─────────────────────────────────────────────────────────── */
 form {
   margin: 1rem 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap;                     /* Inputs brechen auf neuer Zeile um wenn kein Platz */
   gap: 0.6rem;
 }
 
 input, select {
-  flex: 1;
+  flex: 1;                             /* Teilen den verfügbaren Platz gleichmäßig auf */
   padding: 0.6rem 0.8rem;
   border: none;
   border-radius: var(--radius);
-  background: var(--bg-tertiary);
+  background: var(--bg-tertiary);      /* Leicht abgehobener Hintergrund */
   color: var(--text);
   font-size: 0.95rem;
 }
 
 input:focus, select:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent);   /* Fokus-Ring in iOS-Blau – Accessibility */
+  /*
+    Niemals outline: none ohne Ersatz! Menschen die per Tastatur navigieren
+    (oder Screenreader-Nutzer) sehen dann nicht wo der Fokus ist.
+  */
 }
 
-/* === Buttons === */
+
+/* ── BUTTONS ─────────────────────────────────────────────────
+   Standard-Button: rundes Icon-Button-Design.
+   Überschreibungen für spezielle Buttons erfolgen darunter.
+   ─────────────────────────────────────────────────────────── */
 button {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 50%;                  /* Perfekter Kreis */
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
+  background: var(--accent);           /* iOS-Blau als Standard */
   border: none;
   cursor: pointer;
   transition: background-color var(--transition), transform 0.1s;
@@ -238,74 +309,75 @@ button img {
   width: 22px;
   height: 22px;
   pointer-events: none;
+  /*
+    pointer-events: none auf dem img verhindert, dass Klick-Events
+    auf dem Bild statt auf dem Button landen → Event-Handler funktioniert
+    immer zuverlässig.
+  */
 }
 
-button:hover { background: #006edc; }
-button:active { transform: scale(0.95); }
+button:hover  { background: #006edc; }      /* Dunkleres Blau beim Hover */
+button:active { transform: scale(0.95); }   /* Kleines "Drücken"-Feedback beim Klicken */
 
-button.danger {
-  background: var(--danger);
-}
-button.danger:hover {
-  background: var(--danger-hover);
-}
+/* Gefährliche Aktionen (Löschen): Rot statt Blau */
+button.danger       { background: var(--danger); }
+button.danger:hover { background: var(--danger-hover); }
 
-
-/* Sidebar Close-Button */
+/* Sidebar-Close-Button: transparent, kein Hintergrund */
 .close-btn {
   background: transparent;
   border: none;
   color: var(--text);
   font-size: 1.5rem;
-  align-self: flex-end;
+  align-self: flex-end;                /* In der Sidebar-Flexbox nach rechts schieben */
   cursor: pointer;
 }
 .close-btn:hover { color: var(--danger); }
 
-/* === Chips (Listen) === */
+
+/* ── LISTEN-CHIPS (TABS) ─────────────────────────────────────
+   Pill-förmige Buttons zum Wechseln der aktiven Liste.
+   Die .active-Klasse wird von app.js gesetzt.
+   ─────────────────────────────────────────────────────────── */
 .list-chip {
   display: inline-block;
   padding: 6px 14px;
   margin: 4px 0;
-  border-radius: 12px; /* statt 50% → pill look */
-  background: #2c2c2e; /* dunkles Grau wie iOS Darkmode */
+  border-radius: 12px;                 /* Pill-Form, kein 50% (wäre zu rund) */
+  background: #2c2c2e;
   color: #f5f5f7;
   font-size: 0.95rem;
   font-weight: 500;
-  border: 1px solid #3a3a3c;
+  border: 1px solid #3a3a3c;          /* Dezenter Rahmen für Tiefe */
   cursor: pointer;
   transition: background-color 0.2s, transform 0.1s;
   text-align: left;
-  width: 100%; /* damit es sidebar-breit ist */
+  width: 100%;                         /* Volle Sidebar-Breite */
 }
 
-.list-chip:hover {
-  background: #3a3a3c;
-}
-
+.list-chip:hover  { background: #3a3a3c; }
 .list-chip.active {
-  background: #0a84ff; /* Apple Blau */
+  background: #0a84ff;                 /* Aktive Liste: iOS-Blau */
   color: #fff;
   border-color: #0a84ff;
 }
-
-.list-chip:active {
-  transform: scale(0.97);
-}
+.list-chip:active { transform: scale(0.97); }
 
 
-/* === List Items === */
+/* ── ARTIKEL-LISTE ───────────────────────────────────────────
+   Die Artikel werden als <ul> → <li> von app.js gerendert.
+   ─────────────────────────────────────────────────────────── */
 ul {
-  list-style: none;
+  list-style: none;                    /* Keine Bullet-Points */
   padding: 0;
   margin: 0.3rem 0 1rem 0;
 }
 
 li {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between;      /* Text links, Löschen-Button rechts */
   align-items: center;
-  background: var(--bg-secondary);
+  background: var(--bg-secondary);     /* Karten-Look */
   padding: 0.6rem 0.8rem;
   margin: 0.3rem 0;
   border-radius: var(--radius);
@@ -313,45 +385,63 @@ li {
 }
 
 li.checked span {
-  text-decoration: line-through;
-  color: var(--text-secondary);
+  text-decoration: line-through;       /* Durchgestrichen wenn abgehakt */
+  color: var(--text-secondary);        /* Ausgegraut */
 }
 
-/* === Section Headers === */
+
+/* ── ABSCHNITTS-ÜBERSCHRIFTEN ────────────────────────────────
+   h2 = Laden (z.B. "🏬 Rewe")
+   h3 = Kategorie (z.B. "🥤 Getränke")
+   ─────────────────────────────────────────────────────────── */
 h2 {
   margin: 1.5rem 0 0.6rem;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text);
 }
+
 h3 {
   margin: 1rem 0 0.5rem;
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary);        /* Etwas dezenter als h2 */
 }
 
-/* === Snackbar (Undo) === */
+
+/* ── SNACKBAR (UNDO) ─────────────────────────────────────────
+   Erscheint kurz unten in der Mitte nach dem Löschen eines Artikels.
+   Implementiert mit visibility + CSS-Animation (kein display:none/block
+   damit die fadeout-Animation sichtbar ist).
+   ─────────────────────────────────────────────────────────── */
 #snackbar {
-  visibility: hidden;
+  visibility: hidden;                  /* Unsichtbar aber im DOM vorhanden (Layout reserviert) */
   min-width: 250px;
   background-color: var(--bg-secondary);
   color: var(--text);
   text-align: center;
   border-radius: var(--radius);
   padding: 0.8rem;
-  position: fixed;
+  position: fixed;                     /* Immer sichtbar, auch beim Scrollen */
   bottom: 30px;
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
+  transform: translateX(-50%);        /* Horizontal zentrieren: left:50% + transform ist der Standard-Trick */
+  z-index: 2000;                      /* Über allem anderen (auch über Sidebar z-index:999) */
   box-shadow: var(--shadow);
 }
 
 #snackbar.show {
   visibility: visible;
+  /*
+    Zwei Animationen hintereinander:
+    - fadein: 0.5s → blendet ein
+    - fadeout: 0.5s, startet bei 3.5s → blendet aus
+    Gesamt: Snackbar ist ~3.5s sichtbar, dann 0.5s fadeout
+    (app.js setzt .show nach 4s zurück)
+  */
   animation: fadein 0.5s, fadeout 0.5s 3.5s;
 }
 
+/* Undo-Button in der Snackbar: kein Hintergrund, nur blauer Text */
 #snackbar button {
   background: none;
   color: var(--accent);
@@ -359,19 +449,38 @@ h3 {
   padding: 0.3rem 0.6rem;
 }
 
+/* Keyframes für die Snackbar-Animationen */
 @keyframes fadein {
-  from {bottom: 0; opacity: 0;}
-  to {bottom: 30px; opacity: 1;}
+  from { bottom: 0;   opacity: 0; }   /* Startet unten, transparent */
+  to   { bottom: 30px; opacity: 1; } /* Fährt hoch, wird sichtbar */
 }
 
 @keyframes fadeout {
-  from {bottom: 30px; opacity: 1;}
-  to {bottom: 0; opacity: 0;}
+  from { bottom: 30px; opacity: 1; }  /* Sichtbar */
+  to   { bottom: 0;   opacity: 0; }   /* Fährt runter, wird transparent */
 }
 
-/* === Drag & Drop Feedback === */
-li[draggable="true"] { cursor: grab; }
-li.drag-over { border: 2px dashed var(--accent); }
 
-#deleteListBtn[disabled] { opacity: 0.6; pointer-events: none; }
+/* ── DRAG & DROP ─────────────────────────────────────────────
+   Visuelles Feedback während des Drag-Vorgangs.
+   Die draggable="true"-Klasse wird von app.js gesetzt.
+   Die .drag-over-Klasse wird von app.js per addEventListener gesetzt/entfernt.
+   ─────────────────────────────────────────────────────────── */
+li[draggable="true"] {
+  cursor: grab;                        /* Zeigt dem User: dieses Element ist verschiebbar */
+}
 
+li.drag-over {
+  border: 2px dashed var(--accent);   /* Gestrichelter Rahmen: "Hier ablegen" */
+}
+
+
+/* ── DEAKTIVIERTER DELETE-BUTTON ─────────────────────────────
+   Wenn der deleteListBtn gerade eine async-Operation ausführt
+   (dataset.busy = "1"), wird er per JS deaktiviert.
+   Dieses CSS gibt visuelles Feedback.
+   ─────────────────────────────────────────────────────────── */
+#deleteListBtn[disabled] {
+  opacity: 0.6;                        /* Ausgeblendet: signalisiert "nicht klickbar" */
+  pointer-events: none;                /* Verhindert Klicks komplett (auch wenn opacity noch >0) */
+}

@@ -1,55 +1,145 @@
 <!DOCTYPE html>
+<!--
+  DOCTYPE: Teilt dem Browser mit, dass dies HTML5 ist.
+  Ohne DOCTYPE fällt der Browser in den "Quirks Mode" und rendert Dinge anders.
+-->
+
 <html lang="de">
+<!--
+  lang="de": Hilfreich für Screenreader, Suchmaschinen und Browser-Übersetzungsangebote.
+  Sollte immer gesetzt sein – ist Teil guter Accessibility-Praxis.
+-->
+
 <head>
+  <!--
+    <head> enthält Metadaten – Dinge die der Browser braucht, aber der User nicht direkt sieht.
+  -->
+
   <meta charset="UTF-8">
+  <!--
+    Zeichenkodierung: UTF-8 kann alle Sprachen, Sonderzeichen und Emojis darstellen.
+    Ohne das können Umlaute (ä, ö, ü) oder Emojis (🛒) als Kauderwelsch erscheinen.
+  -->
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    Viewport-Tag: Essentiell für Responsive Design auf Mobilgeräten.
+    Ohne diesen Tag würde ein Smartphone die Seite auf Desktop-Breite zoomen und
+    dann rauszoomen → winzige, unlesbare Seite.
+    - width=device-width: Seitenbreite = Bildschirmbreite des Geräts
+    - initial-scale=1.0: Kein Zoom beim Laden
+  -->
+
   <title>Gemeinsame Einkaufsliste</title>
+  <!-- Tab-Titel im Browser. Wird auch von Suchmaschinen und beim Bookmarken genutzt. -->
+
   <link rel="stylesheet" href="style.css">
+  <!--
+    Externes Stylesheet einbinden. Der Browser lädt style.css und wendet es auf die Seite an.
+    Steht im <head>, damit das CSS geladen ist bevor der Browser HTML rendert
+    → verhindert kurzes Aufflackern von unstyled Content (FOUC).
+  -->
 </head>
+
 <body>
+  <!--
+    Das Layout besteht aus zwei Hauptbereichen nebeneinander (Flexbox in body in style.css):
+    1. .sidebar  – links, enthält Login/Logout, Listen-Verwaltung
+    2. .content  – rechts, enthält Header, Formular, Artikelliste
+  -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR
+       Auf Desktop: immer sichtbar links.
+       Auf Mobil: off-canvas (per CSS transform rausgeschoben), wird per JS mit .open-Klasse eingeblendet.
+       ═══════════════════════════════════════════════════════ -->
   <div class="sidebar" id="sidebar">
+
+    <!-- Sidebar schließen (nur relevant auf Mobil) -->
     <button id="closeSidebar" class="close-btn" title="Sidebar schließen">
       <img src="https://img.icons8.com/ios-filled/50/ffffff/multiply.png" alt="Close">
+      <!--
+        Icons kommen von icons8.com per URL (kein lokaler Download nötig).
+        alt-Text ist wichtig für Screenreader und wenn das Bild nicht lädt.
+      -->
     </button>
+
+    <!-- Zeigt den Namen des eingeloggten Users. Wird per JS befüllt. Anfangs leer. -->
     <div id="userInfo"></div>
+
+    <!-- Login-Button: nur sichtbar wenn nicht eingeloggt. Wird per JS show/hide gesteuert. -->
     <button id="loginBtn" title="Mit Google anmelden">
       <img src="https://img.icons8.com/ios-filled/50/ffffff/google-logo.png" alt="Google Login">
     </button>
+
+    <!-- Listen-Verwaltung (Tabs / Chips zum Wechseln zwischen Listen) -->
     <div class="list-switcher">
       <h3>🗂️ Listen</h3>
+
+      <!-- listChips: Hier rendert app.js dynamisch einen Button pro Liste. Anfangs leer. -->
       <div id="listChips"></div>
 
+      <!-- Formular zum Anlegen einer neuen Liste -->
       <form id="newListForm" autocomplete="off">
+        <!--
+          autocomplete="off": Browser soll keine Autovervollständigung für Listennamen vorschlagen.
+          Wäre hier irreführend.
+        -->
         <input id="newListName" type="text" placeholder="Neue Liste (z. B. Familie)">
         <button type="submit" title="Liste Hinzufügen">
           <img src="https://img.icons8.com/ios-filled/50/ffffff/plus.png" alt="Liste Hinzufügen">
         </button>
       </form>
+
+      <!-- Löscht die aktuell ausgewählte Liste (inkl. aller Artikel) -->
       <button id="deleteListBtn" class="danger" title="Liste löschen">
         <img src="https://img.icons8.com/ios-filled/50/ffffff/trash.png" alt="Delete List">
       </button>
     </div>
+
+    <!-- Logout-Button: Per default versteckt (style="display:none").
+         app.js zeigt ihn nur wenn ein User eingeloggt ist. -->
     <button id="logoutBtn" title="Logout" style="display:none;">
       <img src="https://img.icons8.com/ios-filled/50/ffffff/exit.png" alt="Logout">
     </button>
   </div>
 
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN CONTENT
+       Der Hauptbereich der App – nimmt den restlichen Platz ein (flex: 1 in CSS).
+       ═══════════════════════════════════════════════════════ -->
   <div class="content">
+
+    <!-- Sticky Header: bleibt oben beim Scrollen (position: sticky in CSS) -->
     <header>
+      <!-- Hamburger-Button: öffnet Sidebar auf Mobil -->
       <button id="toggleSidebar" title="Sidebar öffnen">
         <img src="https://img.icons8.com/material-rounded/48/FFFFFF/menu--v1.png" alt="Menu">
       </button>
       <h1>🛒 Gemeinsame Einkaufsliste</h1>
     </header>
 
+    <!-- Formular zum Hinzufügen eines Artikels -->
     <form id="itemForm">
       <input id="itemInput" type="text" placeholder="Produkt eingeben" required>
+      <!--
+        required: HTML5-Validierung. Browser verhindert Submit wenn das Feld leer ist.
+        Das Formular prüft also schon clientseitig – app.js prüft nochmal (defensive Programmierung).
+      -->
 
-      <!-- Kategorien werden dynamisch per app.js befüllt -->
+      <!-- Kategorie-Dropdown: Die <option>-Einträge werden von app.js dynamisch eingefügt! -->
       <select id="itemCategory" required>
         <option value="" disabled selected>Kategorie wählen</option>
+        <!--
+          disabled: Diese Option kann nicht ausgewählt werden (ist nur Platzhalter-Text).
+          selected: Standardmäßig ausgewählt beim Laden (zeigt den Platzhaltertext).
+          value="": Leerer value → required-Validierung schlägt an, falls der User nichts wählt.
+        -->
+        <!-- Weitere <option>s werden hier von app.js via appendChild eingefügt -->
       </select>
 
+      <!-- Laden-Dropdown: Fest im HTML codiert (ändert sich selten, kein dynamischer Bedarf) -->
       <select id="itemStore" required>
         <option value="" disabled selected>Laden wählen</option>
         <option value="Best">Best</option>
@@ -71,13 +161,28 @@
       </button>
     </form>
 
+    <!-- Löscht alle Artikel der aktuellen Liste auf einmal -->
     <button id="clearAllBtn" class="danger" title="Alle löschen">
       <img src="https://img.icons8.com/ios-filled/50/ffffff/trash.png" alt="Clear All">
     </button>
 
+    <!-- Container für die Artikel-Liste. Wird komplett von app.js (renderItems) befüllt. Anfangs leer. -->
     <div id="itemList"></div>
   </div>
 
+  <!--
+    JavaScript einbinden – ganz am Ende des <body>.
+    Warum hier statt im <head>?
+    → Wäre es im <head>, würde das JS laden und ausführen bevor das HTML da ist.
+       getElementById würde null zurückgeben. Zwar löst DOMContentLoaded das auch,
+       aber am Ende des body ist es klassisch und sicher.
+
+    type="module": Ganz wichtig!
+    → Aktiviert ES Modules (import/export in app.js).
+    → Module haben automatisch "strict mode".
+    → Module werden automatisch "deferred" (wie defer-Attribut) – blockieren nicht das Rendern.
+    → Jedes Module hat einen eigenen Scope (kein versehentliches globales Namespace-Verschmutzen).
+  -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
